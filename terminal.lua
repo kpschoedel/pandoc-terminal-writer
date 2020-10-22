@@ -136,32 +136,38 @@ function fold(s, w)
 	return buf
 end
 
+-- Inserts line breaks in 's' no later than 'width' _actual_ characters,
+-- meaning that the escape sequences do not count as a character.
+-- Each new line is prefixed with 'indent' blanks.
 function fmt(s, width, indent)
+        local lens = #s
         indent = string.rep(" ", indent)
-        local function append_word(buf, column, width, indent, word, word_length)
+        local function append_word(buf, column, width, indent, word, wordlen)
                 if column == 0 then
-                        return buf .. indent .. word, word_length
+                        return buf .. indent .. word, wordlen
                 end
-                if column + word_length <= width then
-                        return buf .. " " .. word, column + 1 + word_length
+                if column + wordlen <= width then
+                        return buf .. " " .. word, column + 1 + wordlen
                 end
-                return buf .. "\n" .. indent .. word, word_length
+                return buf .. "\n" .. indent .. word, wordlen
+        end
+        local function word_length(s)
+                local length = #s
+                for e in s:gmatch("^\27%[[0-9;]+m") do
+                        length = length - #e
+                end
+                return length
         end
         local function get_word(s)
 		if #s == 0 then
 			return "", 0, ""
                 end
-                local word = ""
-                local length = 0
-                while #s > 0 do
-                        h, s = get_1st_letter(s)
-                        if string.find(h, "%s") == 1 then
-                                break
-                        end
-                        word = word .. h
-                        length = length + 1
+                local space = string.find(s, "%s")
+                if space then
+                        local word = s:sub(1, space - 1)
+                        return word, word_length(word), s:sub(space +1)
                 end
-                return word, length, s
+                return s, word_length(s), ""
         end
         local column = 0
         local buf = ""
@@ -179,7 +185,6 @@ function subString(s, orig, nb)
 	local col = 0
 	local buf = ""
 	local h
-
 	while #s > 0 and col < orig do
 		h, s = get_1st_letter(s)
 		col = col + 1
@@ -286,6 +291,21 @@ end
 
 function Strikeout(s)
 	return vt100_sda(s, STYLE_STRIKE)
+end
+
+function SingleQuoted(s)
+	return '‘' .. s .. '’'
+end
+
+function DoubleQuoted(s)
+	return '“' .. s .. '”'
+end
+
+function Quoted(quotetype, s)
+  if quotetype == 'DoubleQuoted' then
+    return DoubleQuoted(s)
+  end
+  return SingleQuoted(s)
 end
 
 function Link(s, src, tit, attr)
