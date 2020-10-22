@@ -18,9 +18,16 @@ STYLE_ITALIC = "3" -- Italic
 STYLE_UNDERL = "4" -- Underlined
 STYLE_STRIKE = "9" -- Striked through
 -- STYLE_TITLE  = "1;7;33" -- Bold, Inverted, Yellow
-STYLE_TITLE  = "1;33" -- Bold, NOT Inverted, Yellow
-STYLE_TABLE_HEAD = "1;33" -- Bold, Yellow
-SCREEN_WIDTH = 128
+-- STYLE_TITLE  = "1;33" -- Bold, NOT Inverted, Yellow
+STYLE_TITLE  = {
+  "1;4;38;5;88", -- bold, underlined, dark red
+  "1;38;5;88",   -- bold, dark red
+  "3;38;5;88",   -- italic, dark red
+}
+-- STYLE_TABLE_HEAD = "1;33" -- Bold, Yellow
+STYLE_TABLE_HEAD = "1;34" -- Bold, Blue
+STYLE_CODE = "1;38;5;240"
+SCREEN_WIDTH = 80
 terminal_col_nb = SCREEN_WIDTH
 
 -- Pipes an inp(ut) to a cmd
@@ -45,12 +52,12 @@ local function command_exists(cmd)
 end
 
 -- Look for a syntax highlighter command on the current system
-if command_exists("pygmentize") then
+if want_highlight and command_exists("pygmentize") then
 	highlight = function(s, fmt)
 		local hl = pipe("pygmentize -l " .. fmt ..  " -f console", s)
 		return hl == "" and s or hl
 	end
-elseif command_exists("highlight") then
+elseif want_highlight and command_exists("highlight") then
 	highlight = function(s, fmt)
 		local hl = pipe("highlight -O ansi -S " .. fmt, s)
 		return hl == "" and s or hl
@@ -257,7 +264,7 @@ function Image(s, src, tit, attr)
 end
 
 function Code(s, attr)
-	return vt100_sda(s, "32")
+	return vt100_sda(s, STYLE_CODE)
 end
 
 function InlineMath(s)
@@ -294,7 +301,10 @@ end
 
 -- lev is an integer, the header level.
 function Header(lev, s, attr)
-	return vt100_sda(string.rep("██", lev - 1) .. "▓▒░ " .. s .. " ", STYLE_TITLE)
+        if lev > #STYLE_TITLE then
+          lev = #STYLE_TITLE
+        end
+	return vt100_sda(s, STYLE_TITLE[lev])
 end
 
 function BlockQuote(s)
@@ -318,7 +328,7 @@ end
 function CodeBlock(s, attr)
 	local lines = {}
 	local ret
-	ret = vt100_sda("  ╭───┬────────┄", STYLE_DIM) .. "\n"
+	ret = ""
 
 	if attr["class"] ~= "" then
 		s = highlight(s, attr["class"])
@@ -333,9 +343,9 @@ function CodeBlock(s, attr)
 	end
 
 	for n, l in pairs(lines) do
-		ret = ret .. vt100_sda("  │" .. string.format("%3d",n) .. "│ ", STYLE_DIM) .. l .. "\n"
+		ret = ret .. "  " .. l .. "\n"
 	end
-	return ret .. vt100_sda("  ╰───┴───────────┄", STYLE_DIM)
+	return ret
 end
 
 depth = 0
