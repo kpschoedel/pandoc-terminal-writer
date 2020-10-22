@@ -136,6 +136,43 @@ function fold(s, w)
 	return buf
 end
 
+function fmt(s, width, indent)
+        indent = string.rep(" ", indent)
+        local function append_word(buf, column, width, indent, word, word_length)
+                if column == 0 then
+                        return buf .. indent .. word, word_length
+                end
+                if column + word_length <= width then
+                        return buf .. " " .. word, column + 1 + word_length
+                end
+                return buf .. "\n" .. indent .. word, word_length
+        end
+        local function get_word(s)
+		if #s == 0 then
+			return "", 0, ""
+                end
+                local word = ""
+                local length = 0
+                while #s > 0 do
+                        h, s = get_1st_letter(s)
+                        if string.find(h, "%s") == 1 then
+                                break
+                        end
+                        word = word .. h
+                        length = length + 1
+                end
+                return word, length, s
+        end
+        local column = 0
+        local buf = ""
+        while #s > 0 do
+                w, n, s = get_word(s)
+                buf, column = append_word(buf, column, width, indent, w, n)
+        end
+        return buf .. "\n"
+end
+
+
 -- Returns a substring of 's', starting after 'orig' and of length 'nb'
 -- Escape sequences are NOT counted as characters and thus are not cut.
 function subString(s, orig, nb)
@@ -296,7 +333,7 @@ function Plain(s)
 end
 
 function Para(s)
-	return s
+	return fmt(s, terminal_col_nb, 0)
 end
 
 -- lev is an integer, the header level.
@@ -308,16 +345,7 @@ function Header(lev, s, attr)
 end
 
 function BlockQuote(s)
-	local ret = "  ▛\n"
-	local bloc = ''
-	for l in s:gmatch("[^\r\n]+") do
-		-- Split long line if needed:
-		bloc = fold(l, terminal_col_nb - 4)  -- 4 == width of left margin
-		for sl in bloc:gmatch("[^\r\n]+") do
-			ret = ret .. "  ▌ " .. sl .. "\n"
-		end
-	end
-	return ret .. "  ▙"
+        return "\n" .. fmt(s, terminal_col_nb - 2, 2) .. "\n"
 end
 
 function HorizontalRule()
