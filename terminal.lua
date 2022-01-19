@@ -72,16 +72,17 @@ end
 if os.getenv('COLUMNS') then
 	-- User defined
 	terminal_col_nb = tonumber(os.getenv('COLUMNS'))
+elseif command_exists("tput") then
+	local h = io.popen("tput cols")
+	terminal_col_nb = tonumber(h:read("*all"))
+	h:close()
 elseif command_exists("stty") then
 	local h = io.popen("stty size") -- Result is like: "42 80" (height width)
 	local w = h:read("*all")
 	terminal_col_nb = tonumber(string.match(w, "%d+%s(%d+)"))
 	h:close()
-elseif command_exists("tput") then
-	local h = io.popen("tput cols")
-	terminal_col_nb = tonumber(h:read("*all"))
-	h:close()
 end
+terminal_col_nb = terminal_col_nb - 1
 
 --------- Helpers for wrapping long formatted text lines ----------------------
 
