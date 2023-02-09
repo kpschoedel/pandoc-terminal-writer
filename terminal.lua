@@ -546,6 +546,13 @@ function Div(s, attr)
 	return s
 end
 
+function DoubleQuoted(content)
+  return "“" .. content .. "”"
+end
+
+function SingleQuoted(content)
+  return "‘" .. content .. "’"
+end
 -- The following code will produce runtime warnings when you haven't defined
 -- all of the functions you need for the custom writer, so it's useful
 -- to include when you're working on a writer.
@@ -556,4 +563,3 @@ meta.__index =
 		return function() return "" end
 	end
 setmetatable(_G, meta)
-
