@@ -430,9 +430,16 @@ function OrderedList(items)
 	return table.concat(ret, "\n")
 end
 
--- Revisit association list STackValue instance.
 function DefinitionList(items)
-	return ""
+	local ret = {}
+	for _, item in pairs(items) do
+		local keys = {}
+		for key, value in pairs(item) do
+			table.insert(keys, vt100_sda(key, STYLE_BOLD))
+		end
+		ret[_] = table.concat(keys, "·")
+	end
+	return table.concat(ret, "\n")
 end
 
 function CaptionedImage(src, tit, caption, attr)
